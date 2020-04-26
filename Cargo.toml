@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "rouge-left"
+]
+exclude = [
+    "VermarineEngine"
+]

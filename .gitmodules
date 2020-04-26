@@ -1,0 +1,3 @@
+[submodule "VermarineEngine"]
+	path = VermarineEngine
+	url = https://github.com/NonJam/VermarineEngine
