@@ -20,8 +20,7 @@ impl State for Level {
                 let (template, index) = models.data_from_t(&Renderables::Player).unwrap();
 
                 (
-                    GDSpatial,
-                    Renderable { template: template, index: index },
+                    Renderable::new(Position::default(), index, template),
                     Position::new(20f32, 20f32),
                 )
             })
@@ -156,65 +155,58 @@ impl Level {
         };
 
         // Create entites
-        {
+        let create_multi = || {
             let models = resources.get::<Models<Renderables>>().unwrap();
+            let (wall_t, wall_i) = models.data_from_t(&Renderables::Wall).unwrap();
+            let (floor_t, floor_i) = models.data_from_t(&Renderables::Floor).unwrap();
+            let mut multi_renderable = Renderable::default();
 
-            data.world.insert(
-                (),
-                (0..(width * height)).map(|index| {
-                    let (x, y) = {
-                        let x = index % width;
-                        let y = index / width;
-                        (x, y)
-                    };
+            for i in 0..(width * height) {
+                let (x, y) = {
+                    let x = i % width;
+                    let y = i / width;
+                    (x, y)
+                };
+                
+                let (template, index) = if map[i] {
+                    (wall_t, wall_i)
+                } else {
+                    (floor_t, floor_i)
+                };
 
-                    let (template, index) = if map[index] {
-                        models.data_from_t(&Renderables::Wall).unwrap()
-                    } else {
-                        models.data_from_t(&Renderables::Floor).unwrap()
-                    };
+                multi_renderable.push_child(Renderable::new(
+                    Position::new(x as f32, y as f32),
+                    index,
+                    template,
+                ));
+            }
 
-                    (
-                        GDSpatial,
-                        Renderable { template: template, index: index },
-                        Position::new(x as f32, y as f32),
-                    )
-                }
-            ));
-            let (template, index) = models.data_from_t(&Renderables::Wall).unwrap();
-            data.world.insert(
-                (),
-                (0..width).map(|i| (
-                        GDSpatial,
-                        Renderable { template: template, index: index },
-                        Position::new(i as f32, 0f32),
-                    )
-            ));
-            data.world.insert(
-                (),
-                (0..width).map(|i| (
-                        GDSpatial,
-                        Renderable { template: template, index: index },
-                        Position::new(i as f32, height as f32 - 1f32),
-                    )
-            ));
-            data.world.insert(
-                (),
-                (0..height).map(|i| (
-                        GDSpatial,
-                        Renderable { template: template, index: index },
-                        Position::new(0f32, i as f32),
-                    )
-            ));
-            data.world.insert(
-                (),
-                (0..height).map(|i| (
-                        GDSpatial,
-                        Renderable { template: template, index: index },
-                        Position::new(width as f32 - 1f32, i as f32),
-                    )
-            ));
-        }
+            let (template, index) = (wall_t, wall_i);
+            for i in 0..width {
+                multi_renderable.push_child(Renderable::new(
+                    Position::new(i as f32, 0f32), index, template,
+                ));
+                multi_renderable.push_child(Renderable::new(
+                    Position::new(i as f32, height as f32 - 1f32), index, template,
+                ));
+            }
+            for i in 0..height {
+                multi_renderable.push_child(Renderable::new(
+                    Position::new(0f32, i as f32), index, template,
+                ));
+                multi_renderable.push_child(Renderable::new(
+                    Position::new(width as f32 - 1f32, i as f32), index, template,
+                ));
+            }
+            multi_renderable
+        };
+
+        data.world.insert(
+            (),
+            (0..1).map(move |_| (
+                create_multi(),
+            ))
+        );
 
         resources.insert(Map(map));
 
